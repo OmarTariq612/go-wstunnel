@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strconv"
 
 	"github.com/OmarTariq612/go-wstunnel/util"
 	"nhooyr.io/websocket"
@@ -38,6 +39,7 @@ func (s *Server) ListenAndServe() error {
 			}
 			return
 		}
+		defer tcpConn.Close()
 
 		wsConn, err := websocket.Accept(w, r, &websocket.AcceptOptions{InsecureSkipVerify: true, Subprotocols: []string{util.WSProtocol}})
 		if err != nil {
@@ -46,7 +48,7 @@ func (s *Server) ListenAndServe() error {
 		}
 
 		wsNetConn := websocket.NetConn(context.Background(), wsConn, websocket.MessageBinary)
-
+		defer wsNetConn.Close()
 		errCh := make(chan error, 2)
 
 		go func() {
@@ -75,7 +77,7 @@ func (s *Server) ListenAndServe() error {
 
 func (s *Server) reject(w http.ResponseWriter, r *http.Request, statusCode int, errorMsg string) error {
 	w.Header().Add("Connection", "close")
-	w.Header().Add(util.RejectReasonHeader, errorMsg)
+	w.Header().Add(util.RejectReasonHeader, strconv.Quote(errorMsg))
 	w.WriteHeader(statusCode)
 	return r.Body.Close()
 }

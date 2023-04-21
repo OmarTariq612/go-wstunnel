@@ -64,9 +64,15 @@ func (c *Client) Start() error {
 func (c *Client) handleConnection(tcpConn net.Conn) {
 	defer tcpConn.Close()
 	// wsConn, _, err := websocket.Dial(context.Background(), fmt.Sprintf("ws://%s/?dst=%s", c.serverAddr, c.remoteAddr), &websocket.DialOptions{Subprotocols: []string{util.WSProtocol}})
-	wsConn, _, err := websocket.Dial(context.Background(), fmt.Sprintf("%s?dst=%s", c.serverAddr, c.remoteAddr), &websocket.DialOptions{Subprotocols: []string{util.WSProtocol}})
+	wsConn, resp, err := websocket.Dial(context.Background(), fmt.Sprintf("%s?dst=%s", c.serverAddr, c.remoteAddr), &websocket.DialOptions{Subprotocols: []string{util.WSProtocol}})
 	if err != nil {
-		log.Println(err)
+		var msg string
+		if resp != nil {
+			msg = fmt.Sprintf("err: %v , reason: %s", err, resp.Header.Get(util.RejectReasonHeader))
+		} else {
+			msg = fmt.Sprintf("err: %v", err)
+		}
+		log.Print(msg)
 		return
 	}
 
